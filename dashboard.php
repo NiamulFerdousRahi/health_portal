@@ -10,6 +10,13 @@ if(!isset($_SESSION['email'])){
 
 $email = $_SESSION['email'];
 
+// Handle logout
+if(isset($_GET['logout'])){
+    session_destroy();
+    header("Location: index.html");
+    exit();
+}
+
 // Fetch patient information
 $patientQuery = "SELECT * FROM patients WHERE email='$email'";
 $patient = $conn->query($patientQuery)->fetch_assoc();
@@ -41,6 +48,12 @@ $prescriptions = $conn->query("SELECT * FROM prescriptions WHERE patient_email='
 
 // Fetch doctor entries
 $doctor_entries = $conn->query("SELECT * FROM doctor_entries WHERE patient_email='$email' ORDER BY entry_date DESC");
+
+function calculate_age($dob){
+    $birthdate = new DateTime($dob);
+    $today = new DateTime();
+    return $today->diff($birthdate)->y;
+}
 ?>
 
 <!DOCTYPE html>
@@ -51,10 +64,21 @@ $doctor_entries = $conn->query("SELECT * FROM doctor_entries WHERE patient_email
 <style>
 body { font-family: "Noto Sans Bengali", sans-serif; background: #f5faff; padding: 20px; }
 .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-h2 { color: #006a4e; text-align: center; }
+h2 { color: #006a4e; text-align: center; margin: 0; }
+.logout-btn {
+    float: right;
+    background: #e63946;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+}
+.logout-btn:hover { background: #b71c1c; }
+.header { overflow: hidden; margin-bottom: 20px; }
 table { width: 100%; border-collapse: collapse; margin-top: 20px; }
 table, th, td { border: 1px solid #ccc; }
-th, td { padding: 10px; text-align: left; }
+th, td { padding: 10px; text-align: left; vertical-align: top; }
 input, button { padding: 8px; border-radius: 6px; border: 1px solid #ccc; margin-top: 5px; }
 button { background: #006a4e; color: white; border: none; cursor: pointer; }
 button:hover { background: #004d36; }
@@ -64,10 +88,14 @@ form { margin-top: 20px; }
 <body>
 <div class="container">
 
-<h2>রোগীর ড্যাশবোর্ড</h2>
+<div class="header">
+    <h2>রোগীর ড্যাশবোর্ড</h2>
+    <a href="?logout=true" class="logout-btn">লগআউট</a>
+</div>
 
 <h3>ব্যক্তিগত তথ্য</h3>
 <p><strong>নাম:</strong> <?php echo $patient['name']; ?></p>
+<p><strong>বয়স:</strong> <?php echo calculate_age($patient['dob']); ?> বছর</p>
 <p><strong>জন্ম তারিখ:</strong> <?php echo $patient['dob']; ?></p>
 <p><strong>লিঙ্গ:</strong> <?php echo $patient['gender']; ?></p>
 <p><strong>জেলা:</strong> <?php echo $patient['district']; ?></p>
@@ -106,8 +134,11 @@ form { margin-top: 20px; }
 <th>সেবন বিধি</th>
 <th>দিন</th>
 <th>পরামর্শ</th>
+<th>ডাক্তারের তথ্য</th>
 </tr>
-<?php while($row = $doctor_entries->fetch_assoc()){ ?>
+<?php while($row = $doctor_entries->fetch_assoc()){ 
+    $doctor_info = json_decode($row['doctor_info'], true);
+?>
 <tr>
 <td><?php echo $row['entry_date']; ?></td>
 <td><?php echo $row['disease_description']; ?></td>
@@ -115,6 +146,13 @@ form { margin-top: 20px; }
 <td><?php echo $row['dosage']; ?></td>
 <td><?php echo $row['days']; ?></td>
 <td><?php echo $row['advice']; ?></td>
+<td>
+<?php if($doctor_info){ ?>
+ডাক্তারঃ <?php echo $doctor_info['doctor_name']; ?><br>
+পদবীঃ <?php echo $doctor_info['doctor_designation']; ?><br>
+জরুরী প্রয়োজনঃ <?php echo $doctor_info['doctor_email']; ?>
+<?php } ?>
+</td>
 </tr>
 <?php } ?>
 </table>

@@ -2,16 +2,23 @@
 session_start();
 include('db.php');
 
-if(isset($_POST['email'])){
-    $email = $_POST['email'];
+$error = "";
 
-    // Check if email ends with '@dghs.gov.bd'
-    if(substr($email, -12) !== '@dghs.gov.bd'){
-        echo "<script>alert('ডাক্তারের ইমেল ঠিকানা সঠিক নয়!');</script>";
-    } else {
+if (isset($_POST['login'])) {
+    $designation = $_POST['designation'];
+    $email = $_POST['email'];
+    $password = md5($_POST['password']); // MD5 ব্যবহার করা হয়েছে (demo)
+
+    $sql = "SELECT * FROM doctors WHERE designation='$designation' AND email='$email' AND password='$password'";
+    $result = $conn->query($sql);
+
+    if ($result->num_rows == 1) {
         $_SESSION['doctor_email'] = $email;
+        $_SESSION['doctor_designation'] = $designation;
         header("Location: doctor_dashboard.php");
         exit();
+    } else {
+        $error = "ভুল পদবী, ইমেইল বা পাসওয়ার্ড!";
     }
 }
 ?>
@@ -22,19 +29,36 @@ if(isset($_POST['email'])){
 <meta charset="UTF-8">
 <title>ডাক্তার লগইন</title>
 <style>
-body { font-family: "Noto Sans Bengali", sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f5faff; }
-form { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 400px; }
-input { width: 100%; padding: 8px; margin-top: 10px; border: 1px solid #ccc; border-radius: 6px; }
-button { margin-top: 20px; padding: 10px; width: 100%; background: #006a4e; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+body { font-family: "Noto Sans Bengali", sans-serif; background: #eef6f9; padding: 50px; }
+.container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+select, input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; }
+button { background: #006a4e; color: white; padding: 10px; border: none; border-radius: 6px; cursor: pointer; width: 100%; }
 button:hover { background: #004d36; }
+.error { color: red; text-align: center; }
 </style>
 </head>
 <body>
-<form method="post">
-<h2 style="text-align:center;">ডাক্তার লগইন</h2>
-<label>ইমেল ঠিকানা:</label>
-<input type="email" name="email" required>
-<button type="submit">লগইন</button>
-</form>
+<div class="container">
+    <h2 style="text-align:center;">ডাক্তার লগইন</h2>
+    <?php if($error){ echo "<p class='error'>$error</p>"; } ?>
+    <form method="post">
+        <label>পদবী নির্বাচন করুন</label>
+        <select name="designation" required>
+            <option value="">-- নির্বাচন করুন --</option>
+            <option value="আবাসিক মেডিকেল অফিসার">আবাসিক মেডিকেল অফিসার</option>
+            <option value="মেডিকেল অফিসার">মেডিকেল অফিসার</option>
+            <option value="জুনিয়র কনসালটেন্ট">জুনিয়র কনসালটেন্ট</option>
+            <option value="সিনিয়র কনসালটেন্ট">সিনিয়র কনসালটেন্ট</option>
+        </select>
+
+        <label>ইমেইল</label>
+        <input type="email" name="email" required>
+
+        <label>পাসওয়ার্ড</label>
+        <input type="password" name="password" required>
+
+        <button type="submit" name="login">লগইন করুন</button>
+    </form>
+</div>
 </body>
 </html>

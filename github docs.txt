@@ -1,0 +1,13 @@
+https://github.com/NiamulFerdousRahi/health_portal.git
+
+echo "# health_portal" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/NiamulFerdousRahi/health_portal.git
+git push -u origin main
+
+git remote add origin https://github.com/NiamulFerdousRahi/health_portal.git
+git branch -M main
+git push -u origin main

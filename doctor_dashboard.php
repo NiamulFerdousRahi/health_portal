@@ -2,30 +2,35 @@
 session_start();
 include('db.php');
 
+// যদি ডাক্তার লগইন না করা থাকে
 if(!isset($_SESSION['doctor_email'])){
     header("Location: doctor_login.php");
     exit();
 }
+
+// ডাক্তারের session
+$doctor_email = $_SESSION['doctor_email'];
+$doctor_designation = $_SESSION['doctor_designation'];
+
+// ডাটাবেস থেকে ডাক্তারের নাম
+$doctor_query = $conn->query("SELECT name FROM doctors WHERE email='$doctor_email' LIMIT 1");
+$doctor = $doctor_query->fetch_assoc();
+$doctor_name = $doctor ? $doctor['name'] : '';
 
 $patient_data = null;
 $patient_email = '';
 $prescriptions = null;
 $latest_entry = null;
 
-// Handle fetching patient
+// রোগী fetch
 if(isset($_POST['patient_email']) && !isset($_POST['insert']) && !isset($_POST['update'])){
     $patient_email = $_POST['patient_email'];
-    $query = "SELECT * FROM patients WHERE email='$patient_email'";
-    $patient_data = $conn->query($query)->fetch_assoc();
-
-    // Fetch patient prescriptions
+    $patient_data = $conn->query("SELECT * FROM patients WHERE email='$patient_email'")->fetch_assoc();
     $prescriptions = $conn->query("SELECT * FROM prescriptions WHERE patient_email='$patient_email' ORDER BY upload_date DESC");
-
-    // Fetch latest doctor entry
     $latest_entry = $conn->query("SELECT * FROM doctor_entries WHERE patient_email='$patient_email' ORDER BY entry_date DESC LIMIT 1")->fetch_assoc();
 }
 
-// Handle inserting new doctor entry
+// নতুন entry insert
 if(isset($_POST['insert'])){
     $patient_email = $_POST['patient_email'];
     $entry_date = $_POST['entry_date'];
@@ -35,19 +40,28 @@ if(isset($_POST['insert'])){
     $days = $_POST['days'];
     $advice = $_POST['advice'];
 
-    $insert = "INSERT INTO doctor_entries (patient_email, entry_date, disease_description, medicine_name, dosage, days, advice) 
-               VALUES ('$patient_email','$entry_date','$disease_description','$medicine_name','$dosage','$days','$advice')";
+    // doctor_info JSON encode
+    $doctor_info = json_encode([
+        'doctor_email' => $doctor_email,
+        'doctor_name' => $doctor_name,
+        'doctor_designation' => $doctor_designation
+    ], JSON_UNESCAPED_UNICODE);
+
+    $insert = "INSERT INTO doctor_entries 
+               (patient_email, entry_date, disease_description, medicine_name, dosage, days, advice, doctor_info) 
+               VALUES 
+               ('$patient_email','$entry_date','$disease_description','$medicine_name','$dosage','$days','$advice','$doctor_info')";
+
     if($conn->query($insert)){
         echo "<script>alert('নতুন ডেটা সফলভাবে সংরক্ষিত হয়েছে!');</script>";
     }
 
-    // reload
     $patient_data = $conn->query("SELECT * FROM patients WHERE email='$patient_email'")->fetch_assoc();
     $prescriptions = $conn->query("SELECT * FROM prescriptions WHERE patient_email='$patient_email' ORDER BY upload_date DESC");
     $latest_entry = $conn->query("SELECT * FROM doctor_entries WHERE patient_email='$patient_email' ORDER BY entry_date DESC LIMIT 1")->fetch_assoc();
 }
 
-// Handle updating latest doctor entry
+// latest entry update
 if(isset($_POST['update'])){
     $entry_id = $_POST['entry_id'];
     $patient_email = $_POST['patient_email'];
@@ -66,15 +80,22 @@ if(isset($_POST['update'])){
                    days='$days',
                    advice='$advice'
                WHERE id='$entry_id'";
-
     if($conn->query($update)){
         echo "<script>alert('সর্বশেষ ডেটা সফলভাবে সংশোধন করা হয়েছে!');</script>";
     }
 
-    // reload
     $patient_data = $conn->query("SELECT * FROM patients WHERE email='$patient_email'")->fetch_assoc();
     $prescriptions = $conn->query("SELECT * FROM prescriptions WHERE patient_email='$patient_email' ORDER BY upload_date DESC");
     $latest_entry = $conn->query("SELECT * FROM doctor_entries WHERE patient_email='$patient_email' ORDER BY entry_date DESC LIMIT 1")->fetch_assoc();
+}
+
+// রোগীর বয়স হিসাব (যদি জন্মতারিখ থাকে)
+function calculate_age($dob){
+    if(!$dob) return '';
+    $birthDate = new DateTime($dob);
+    $today = new DateTime();
+    $age = $today->diff($birthDate)->y;
+    return $age;
 }
 ?>
 
@@ -92,11 +113,33 @@ button:hover { background: #004d36; }
 table { width: 100%; border-collapse: collapse; margin-top: 20px; }
 table, th, td { border: 1px solid #ccc; }
 th, td { padding: 10px; text-align: left; }
+.header { background: #006a4e; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center; }
 </style>
+<script>
+function toggleUpdateForm() {
+    var form = document.getElementById('updateForm');
+    if (form.style.display === 'none' || form.style.display === '') {
+        form.style.display = 'block';
+    } else {
+        form.style.display = 'none';
+    }
+}
+</script>
 </head>
 <body>
 <div class="container">
-<h2>ডাক্তার ড্যাশবোর্ড</h2>
+
+<div class="header">
+    <div>
+        <h2>ডাক্তার ড্যাশবোর্ড</h2>
+        <p>স্বাগতম, <b><?php echo $doctor_name; ?></b> (<?php echo $doctor_designation; ?>)</p>
+    </div>
+    <div>
+        <form method="post" action="index.html">
+            <button type="submit">লগআউট</button>
+        </form>
+    </div>
+</div>
 
 <form method="post">
     <label>রোগীর ইমেল আইডি দিন:</label>
@@ -107,6 +150,8 @@ th, td { padding: 10px; text-align: left; }
 <?php if($patient_data){ ?>
 <hr>
 <h3>রোগীর তথ্য: <?php echo $patient_data['name']; ?></h3>
+<p>বয়স: <?php echo calculate_age($patient_data['dob']); ?> বছর</p>
+<p>লিঙ্গ: <?php echo $patient_data['gender']; ?></p>
 
 <h3>রোগীর আপলোডকৃত প্রিস্ক্রিপশন</h3>
 <?php if($prescriptions && $prescriptions->num_rows > 0){ ?>
@@ -128,7 +173,6 @@ th, td { padding: 10px; text-align: left; }
 <p>রোগীর কোনো প্রিস্ক্রিপশন আপলোড করা হয় নি।</p>
 <?php } ?>
 
-<!-- Insert Form -->
 <h3>নতুন ডক্টর এন্ট্রি যোগ করুন</h3>
 <form method="post">
     <input type="hidden" name="patient_email" value="<?php echo $patient_email; ?>">
@@ -147,10 +191,42 @@ th, td { padding: 10px; text-align: left; }
     <button type="submit" name="insert">সংরক্ষণ করুন</button>
 </form>
 
-<!-- Update latest entry -->
+<h3>রোগীর পূর্ববর্তী সব ডেটা</h3>
+<table>
+<tr>
+<th>তারিখ</th>
+<th>রোগের বিবরণ</th>
+<th>ঔষধ</th>
+<th>সেবন বিধি</th>
+<th>দিন</th>
+<th>পরামর্শ</th>
+<th>ডাক্তারের তথ্য</th>
+</tr>
+<?php
+$entries = $conn->query("SELECT * FROM doctor_entries WHERE patient_email='$patient_email' ORDER BY entry_date DESC");
+while($row = $entries->fetch_assoc()){
+    $doctor_info = json_decode($row['doctor_info'], true);
+    echo "<tr>
+        <td>".$row['entry_date']."</td>
+        <td>".$row['disease_description']."</td>
+        <td>".$row['medicine_name']."</td>
+        <td>".$row['dosage']."</td>
+        <td>".$row['days']."</td>
+        <td>".$row['advice']."</td>
+        <td>
+            ডাক্তারঃ ".($doctor_info['doctor_name'] ?? '')."<br>
+            পদবীঃ ".($doctor_info['doctor_designation'] ?? '')."<br>
+            জরুরী প্রয়োজনঃ ".($doctor_info['doctor_email'] ?? '')."
+        </td>
+    </tr>";
+}
+?>
+</table>
+
 <h3>সর্বশেষ ডেটা সংশোধন করুন</h3>
 <?php if($latest_entry){ ?>
-<form method="post">
+<button type="button" onclick="toggleUpdateForm()">সর্বশেষ ডেটা সংশোধন করুন</button>
+<form method="post" id="updateForm" style="display:none; margin-top:20px;">
     <input type="hidden" name="entry_id" value="<?php echo $latest_entry['id']; ?>">
     <input type="hidden" name="patient_email" value="<?php echo $patient_email; ?>">
     <label>তারিখ:</label>
@@ -165,36 +241,12 @@ th, td { padding: 10px; text-align: left; }
     <input type="text" name="days" value="<?php echo $latest_entry['days']; ?>" required>
     <label>পরামর্শ:</label>
     <textarea name="advice" rows="2" required><?php echo $latest_entry['advice']; ?></textarea>
-    <button type="submit" name="update">সংশোধন করুন</button>
+    <button type="submit" name="update">সংশোধন সম্পন্ন করুন</button>
 </form>
 <?php } else { ?>
 <p>কোনো ডক্টর এন্ট্রি এখনো যোগ করা হয় নি।</p>
 <?php } ?>
 
-<h3>রোগীর পূর্ববর্তী সব ডেটা</h3>
-<table>
-<tr>
-<th>তারিখ</th>
-<th>রোগের বিবরণ</th>
-<th>ঔষধ</th>
-<th>সেবন বিধি</th>
-<th>দিন</th>
-<th>পরামর্শ</th>
-</tr>
-<?php
-$entries = $conn->query("SELECT * FROM doctor_entries WHERE patient_email='$patient_email' ORDER BY entry_date DESC");
-while($row = $entries->fetch_assoc()){
-    echo "<tr>
-        <td>".$row['entry_date']."</td>
-        <td>".$row['disease_description']."</td>
-        <td>".$row['medicine_name']."</td>
-        <td>".$row['dosage']."</td>
-        <td>".$row['days']."</td>
-        <td>".$row['advice']."</td>
-    </tr>";
-}
-?>
-</table>
 <?php } ?>
 </div>
 </body>
