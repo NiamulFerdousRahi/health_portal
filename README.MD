@@ -1,0 +1,2 @@
+ # App Password of your Gmail
+ https://myaccount.google.com/apppasswords?rapt=AEjHL4MGtbdhL8HAWYLm76GGeIdQ_qngHEC05P2nfQV-F-O6vrpRXwfRQqM7qicv1ST32uJ0VTgYyMEKHuRgLjuOSnKQ9SuQv_i1jEoOTzwiv3ykDZiYbjc&pli=1

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <title>জাতীয় স্বাস্থ্য বাতায়ন</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Noto Sans Bengali", sans-serif;
+      background: linear-gradient(to right, #e6f2ff, #f9f9f9);
+      text-align: center;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 30px;
+      background: #006a4e;
+      color: white;
+      border-bottom: 5px solid #ffc107;
+    }
+    header .logo {
+      height: 150px;
+    }
+    header .titles {
+      text-align: center;
+      flex-grow: 1;
+      font-size: 20px;
+    }
+    header .titles h1, header .titles h2, header .titles h3, header .titles h4 {
+      margin: 3px 0;
+    }
+    .container {
+      margin-top: 80px;
+    }
+    select {
+      padding: 10px 15px;
+      font-size: 18px;
+      border-radius: 8px;
+      border: 2px solid #006a4e;
+      outline: none;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 18px;
+      background: #006a4e;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #004d36;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="govt_logo.png" alt="Government Logo" class="logo">
+    <div class="titles">
+      <h2>গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</h2>
+      <h2>স্বাস্থ্য ও পরিবার কল্যাণ মন্ত্রণালয়</h2>
+      <h2>স্বাস্থ্য অধিদপ্তর</h2>
+      <h1>জাতীয় স্বাস্থ্য বাতায়ন</h1>
+    </div>
+    <img src="dghs_logo.png" alt="DGHS Logo" class="logo">
+  </header>
+
+  <div class="container">
+    <h2>নির্বাচন করুন</h2>
+    <form action="select.php" method="post">
+      <select name="option">
+        <option value="রোগী">রোগী</option>
+        <option value="হাসপাতাল">হাসপাতাল</option>
+        <option value="ডাক্তার">ডাক্তার</option>
+      </select>
+      <br>
+      <button type="submit">অগ্রসর হোন</button>
+    </form>
+  </div>
+
+<footer>
+    <br><br><br>
+    <p>বাস্তবায়ন ও রক্ষণাবেক্ষণেঃ মো. নিয়ামুল ফেরদৌস রাহি</p>
+    <p>কম্পিউটার বিজ্ঞান ও প্রকৌশল বিভাগ, লিডিং ইউনিভার্সিটি, সিলেট।</p>
+</footer>
+</body>
+</html>
