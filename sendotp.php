@@ -4,7 +4,7 @@ include('smtp/PHPMailerAutoload.php');
 
 if (isset($_POST['email'])) {
     // Generate OTP
-    $otp = rand(100000, 999999);
+    $otp = rand(100000, 999999); //অউ রেঞ্জের মধ্যে। ৬ সংখ্যার।
     $_SESSION['otp'] = $otp;
 
     // Save registration data in session
@@ -17,14 +17,14 @@ if (isset($_POST['email'])) {
     $_SESSION['email'] = $_POST['email'];
 
     $receiverEmail = $_POST['email'];
-    $subject = "Email Verification";
-    $emailbody = "Your 6 Digit OTP Code: $otp";
+    $subject = "স্বাস্থ্য বাতায়ন এ রেজিস্ট্রেশন করার জন্য OTP";
+    $emailbody = "আপনার ৬ অঙ্কের OTP কোড: $otp";
 
     if (smtp_mailer($receiverEmail, $subject, $emailbody)) {
-        echo "<script>alert('OTP has been sent to your email.'); window.location.href='verify_otp.php';</script>";
+        echo "<script>alert('OTP আপনার ইমেলে পাঠানো হয়েছে।'); window.location.href='verify_otp.php';</script>";
         exit();
     } else {
-        echo "<script>alert('Failed to send OTP. Try again.'); window.location.href='register.php';</script>";
+        echo "<script>alert('OTP পাঠানো যায়নি। আবার চেষ্টা করুন।'); window.location.href='register.php';</script>";
     }
 }
 
@@ -38,8 +38,8 @@ function smtp_mailer($to, $subject, $msg) {
     $mail->Port = 587; 
     $mail->IsHTML(true);
     $mail->CharSet = 'UTF-8';
-    $mail->Username = "mnfrahi2025@gmail.com"; // Change this
-    $mail->Password = "kcke wnst eyta kdyr";   // Change this (App password)
+    $mail->Username = "mnfrahi2025@gmail.com"; //যে মেইল তাকি পাঠাবো
+    $mail->Password = "kcke wnst eyta kdyr"; // Gmail App password
     $mail->SetFrom("mnfrahi2025@gmail.com");
     $mail->Subject = $subject;
     $mail->Body = $msg;

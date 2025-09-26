@@ -1,14 +1,29 @@
 <?php
 session_start();
-include('db.php'); // Include your DB connection
+include('db.php'); // DB connection
 
 // Check if patient is logged in
-if(!isset($_SESSION['email'])){
-    header("Location: login.php");
+if(!isset($_SESSION['patient_id'])){
+    header("Location: patient_login.php");
     exit();
 }
 
-$email = $_SESSION['email'];
+// Use session safely
+$patient_id = $_SESSION['patient_id'];
+$email = $_SESSION['email'] ?? '';
+
+// Fetch patient information safely
+$patientQuery = "SELECT * FROM patients WHERE id=?";
+$stmt = $conn->prepare($patientQuery);
+$stmt->bind_param("i", $patient_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$patient = $result->fetch_assoc();
+
+if(!$patient){
+    echo "Patient data not found.";
+    exit();
+}
 
 // Handle logout
 if(isset($_GET['logout'])){
@@ -16,10 +31,6 @@ if(isset($_GET['logout'])){
     header("Location: index.html");
     exit();
 }
-
-// Fetch patient information
-$patientQuery = "SELECT * FROM patients WHERE email='$email'";
-$patient = $conn->query($patientQuery)->fetch_assoc();
 
 // Handle PDF upload
 if(isset($_POST['upload'])){
@@ -32,8 +43,10 @@ if(isset($_POST['upload'])){
 
     if($fileType == "pdf"){
         if(move_uploaded_file($_FILES["pdf"]["tmp_name"], $targetFile)){
-            $insert = "INSERT INTO prescriptions (patient_email, file_name) VALUES ('$email', '$targetFile')";
-            $conn->query($insert);
+            $insert = "INSERT INTO prescriptions (patient_email, file_name) VALUES (?, ?)";
+            $stmtInsert = $conn->prepare($insert);
+            $stmtInsert->bind_param("ss", $email, $targetFile);
+            $stmtInsert->execute();
             echo "<script>alert('Prescription uploaded successfully!');</script>";
         } else {
             echo "<script>alert('Failed to upload file.');</script>";
@@ -43,11 +56,17 @@ if(isset($_POST['upload'])){
     }
 }
 
-// Fetch prescriptions
-$prescriptions = $conn->query("SELECT * FROM prescriptions WHERE patient_email='$email' ORDER BY upload_date DESC");
+// Fetch prescriptions safely
+$stmtPresc = $conn->prepare("SELECT * FROM prescriptions WHERE patient_email=? ORDER BY upload_date DESC");
+$stmtPresc->bind_param("s", $email);
+$stmtPresc->execute();
+$prescriptions = $stmtPresc->get_result();
 
-// Fetch doctor entries
-$doctor_entries = $conn->query("SELECT * FROM doctor_entries WHERE patient_email='$email' ORDER BY entry_date DESC");
+// Fetch doctor entries safely
+$stmtDoctor = $conn->prepare("SELECT * FROM doctor_entries WHERE patient_email=? ORDER BY entry_date DESC");
+$stmtDoctor->bind_param("s", $email);
+$stmtDoctor->execute();
+$doctor_entries = $stmtDoctor->get_result();
 
 function calculate_age($dob){
     $birthdate = new DateTime($dob);
@@ -94,14 +113,14 @@ form { margin-top: 20px; }
 </div>
 
 <h3>ব্যক্তিগত তথ্য</h3>
-<p><strong>নাম:</strong> <?php echo $patient['name']; ?></p>
+<p><strong>নাম:</strong> <?php echo htmlspecialchars($patient['name']); ?></p>
 <p><strong>বয়স:</strong> <?php echo calculate_age($patient['dob']); ?> বছর</p>
-<p><strong>জন্ম তারিখ:</strong> <?php echo $patient['dob']; ?></p>
-<p><strong>লিঙ্গ:</strong> <?php echo $patient['gender']; ?></p>
-<p><strong>জেলা:</strong> <?php echo $patient['district']; ?></p>
-<p><strong>উপজেলা / থানা:</strong> <?php echo $patient['upazila']; ?></p>
-<p><strong>মোবাইল:</strong> <?php echo $patient['mobile']; ?></p>
-<p><strong>ইমেল:</strong> <?php echo $patient['email']; ?></p>
+<p><strong>জন্ম তারিখ:</strong> <?php echo htmlspecialchars($patient['dob']); ?></p>
+<p><strong>লিঙ্গ:</strong> <?php echo htmlspecialchars($patient['gender']); ?></p>
+<p><strong>জেলা:</strong> <?php echo htmlspecialchars($patient['district']); ?></p>
+<p><strong>উপজেলা / থানা:</strong> <?php echo htmlspecialchars($patient['upazila']); ?></p>
+<p><strong>মোবাইল:</strong> <?php echo htmlspecialchars($patient['mobile']); ?></p>
+<p><strong>ইমেল:</strong> <?php echo htmlspecialchars($patient['email']); ?></p>
 
 <h3>প্রিস্ক্রিপশন আপলোড করুন (PDF)</h3>
 <form method="post" enctype="multipart/form-data">
@@ -118,9 +137,9 @@ form { margin-top: 20px; }
 </tr>
 <?php while($row = $prescriptions->fetch_assoc()){ ?>
 <tr>
-<td><?php echo basename($row['file_name']); ?></td>
-<td><?php echo $row['upload_date']; ?></td>
-<td><a href="<?php echo $row['file_name']; ?>" target="_blank">ডাউনলোড</a></td>
+<td><?php echo htmlspecialchars(basename($row['file_name'])); ?></td>
+<td><?php echo htmlspecialchars($row['upload_date']); ?></td>
+<td><a href="<?php echo htmlspecialchars($row['file_name']); ?>" target="_blank">ডাউনলোড</a></td>
 </tr>
 <?php } ?>
 </table>
@@ -140,17 +159,17 @@ form { margin-top: 20px; }
     $doctor_info = json_decode($row['doctor_info'], true);
 ?>
 <tr>
-<td><?php echo $row['entry_date']; ?></td>
-<td><?php echo $row['disease_description']; ?></td>
-<td><?php echo $row['medicine_name']; ?></td>
-<td><?php echo $row['dosage']; ?></td>
-<td><?php echo $row['days']; ?></td>
-<td><?php echo $row['advice']; ?></td>
+<td><?php echo htmlspecialchars($row['entry_date']); ?></td>
+<td><?php echo htmlspecialchars($row['disease_description']); ?></td>
+<td><?php echo htmlspecialchars($row['medicine_name']); ?></td>
+<td><?php echo htmlspecialchars($row['dosage']); ?></td>
+<td><?php echo htmlspecialchars($row['days']); ?></td>
+<td><?php echo htmlspecialchars($row['advice']); ?></td>
 <td>
 <?php if($doctor_info){ ?>
-ডাক্তারঃ <?php echo $doctor_info['doctor_name']; ?><br>
-পদবীঃ <?php echo $doctor_info['doctor_designation']; ?><br>
-জরুরী প্রয়োজনঃ <?php echo $doctor_info['doctor_email']; ?>
+ডাক্তারঃ <?php echo htmlspecialchars($doctor_info['doctor_name']); ?><br>
+পদবীঃ <?php echo htmlspecialchars($doctor_info['doctor_designation']); ?><br>
+জরুরী প্রয়োজনঃ <?php echo htmlspecialchars($doctor_info['doctor_email']); ?>
 <?php } ?>
 </td>
 </tr>

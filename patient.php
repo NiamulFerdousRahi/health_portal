@@ -20,7 +20,7 @@
 </head>
 <body>
   <h2>রোগী পোর্টাল</h2>
-  <button onclick="window.location.href='login.php'">লগইন করুন</button>
+  <button onclick="window.location.href='patient_login.php'">লগইন করুন</button>
   <button onclick="window.location.href='register.php'">রেজিস্ট্রেশন করুন</button>
 </body>
 </html>

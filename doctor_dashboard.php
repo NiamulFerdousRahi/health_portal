@@ -89,7 +89,7 @@ if(isset($_POST['update'])){
     $latest_entry = $conn->query("SELECT * FROM doctor_entries WHERE patient_email='$patient_email' ORDER BY entry_date DESC LIMIT 1")->fetch_assoc();
 }
 
-// রোগীর বয়স হিসাব (যদি জন্মতারিখ থাকে)
+// রোগীর বয়স হিসাব
 function calculate_age($dob){
     if(!$dob) return '';
     $birthDate = new DateTime($dob);
